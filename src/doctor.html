@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>RME Dapp</title>
+
+    <script src="https://wzrd.in/standalone/buffer"></script>
+    <script src="https://unpkg.com/ipfs-api@9.0.0/dist/index.js"
+    integrity="sha384-5bXRcW9kyxxnSMbOoHzraqa7Z0PQWIao+cgeg327zit1hz5LZCEbIMx/LWKPReuB"
+    crossorigin="anonymous"></script>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <!-- <script src="js/bundle.js"></script> -->
+    <!-- Custom CSS -->
+    <style>
+
+    .panel{
+        margin-bottom: 60px;
+    }
+    .navbar{
+        margin-bottom: 70px;
+    }
+    .panel-heading{
+        margin-bottom: 20px;
+    }
+    .nav-pills > li > a{
+        padding: 0;
+        padding-right: 10px;
+    }
+    .nav-pills > li > a:hover{
+        background-color: initial;
+    }
+    .nav-pills > li.active > a{
+        color: #23527c;
+        background-color: initial;
+    }
+    .nav-pills > li.active > a:hover, .nav-pills > li.active > a:focus{
+        color: #23527c;
+        background-color: inherit;
+    }
+    </style>
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-static-top" role="navigation">
+        <div class="container-fluid">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">RME Dapp</a>
+            </div>
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="./register.html">Salir</a>
+                    </li>
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+        </div>
+        <!-- /.container -->
+    </nav>
+
+    <div class="container">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="text-center">Informacion Personal</h3>
+            </div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-sm-offset-1 col-sm-10">
+                        <table class="table">
+                            <tr>
+                                <th>Nombre:</th>
+                                <td id="name"></td>
+                            </tr>
+                            <tr>
+                                <th>Edad:</th>
+                                <td id="age"></td>
+                            </tr>
+                        </table>
+                        <!-- <div class="form-group">
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-info btn-lg">Update details</button>
+                            </div>
+                        </div> -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="text-center">RME Accesibles</h3>
+            </div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="alert alert-danger col-sm-8 col-sm-offset-2">
+                        <strong>Notice!</strong> Could not access records. Access might have been revoked. Contact admin or patient.
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-offset-1 col-sm-10">
+                        <table id="viewPatient" class="table table-hover">
+                            <tr>
+                                <th>Paciente</th>
+                                <th class="publicKeyPatient">Llave Publica</th>
+                                <th>Accion</th>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script src="js/jquery.js"></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="js/bootstrap.min.js"></script>
+<script src="js/app.js"></script>
+<script src="https://unpkg.com/ipfs-api/dist/index.min.js" crossorigin="anonymous"></script>
+<script>
+    var ipfs = window.IpfsApi('localhost', '5001')
+
+    const Buffer = window.IpfsApi().Buffer;
+
+    var ailmentsDict = {};
+    ailmentsDict[0] = "Cancer";
+    ailmentsDict[1] = "Heart Attack";
+    ailmentsDict[2] = "Brain Tumour";
+    ailmentsDict[3] = "Anaemia";
+    ailmentsDict[4] = "Alzheimer's";
+    ailmentsDict[5] = "Gastroenteritis";
+    ailmentsDict[6] = "Tuberculosis";
+    ailmentsDict[7] = "Spondylolisthesis";
+    var url_string = window.location.href;
+    var url = new URL(url_string);
+    var key = url.searchParams.get("key");
+    var docName = ""
+    key = key.toLocaleLowerCase();
+
+    toggleRecordsButton = 0;
+
+    $(document).ready(function() {
+
+        $(".alert-danger").hide();
+
+
+        var a = 0;
+        var b = 0;
+        contractInstance.get_doctor.call(key, {gas: 1000000},function(error, result){
+            if(!error){
+                a = result[0];
+                b = result[1];
+                docName = a;
+                $("#name").html(a);
+                $("#age").html(b.c[0]);
+            }
+
+            else
+                console.error(error);
+        });
+        var patientAddressList = 0;
+
+        contractInstance.get_accessed_patientlist_for_doctor(key, {gas: 1000000}, function(error, result){
+            if(!error){
+                patientAddressList = result;
+                console.log(result);
+
+                patientAddressList.forEach(function(patientAddress, index){
+                    contractInstance.get_patient.call(patientAddress, {gas: 1000000}, function(error, result){
+                        var table = document.getElementById("viewPatient");
+                        if(!error) {
+                            [a,b] = result;
+                            console.log(a);
+                            // console.log("Hi");
+                            // console.log(i);
+                            var row = table.insertRow(index+1);
+                            var cell1 = row.insertCell(0);
+                            var cell2 = row.insertCell(1);
+                            var cell3 = row.insertCell(2);
+                            cell2.className = "publicKeyPatient";
+                            cell1.innerHTML = a;
+                            cell2.innerHTML = patientAddress;
+                            cell3.innerHTML = '<input class="btn btn-success" onclick="showRecords(this)" id="viewRecordsButton" type="button" value="Ver RME"></input>';
+
+
+                        }
+                        else
+                            console.error(error);
+                    })
+                })
+            }
+            else
+                console.error(error);
+        });
+
+    });
+
+    function showRecords(element){
+
+        var table = document.getElementById("viewPatient");
+        var index = element.parentNode.parentNode.rowIndex;
+        var patientAddress = table.rows[index].cells[1].innerHTML;
+
+        if (toggleRecordsButton%2 == 0){
+
+            var patientRecord = ""
+
+            contractInstance.get_hash(patientAddress, {gas: 1000000}, function(error, result){
+                if(!error){
+
+                    $.get("http://localhost:8080/ipfs/"+result, function(data){
+                        patientRecord = data;
+
+                        content = `<div class="tab-content">
+                        <div id="view${patientAddress}">
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <pre style="margin: 20px 0;" id="records${patientAddress}">${patientRecord}</pre>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div class="row">
+                                            <div class="form-group col-sm-10">
+                                                <div class="row">
+                                                    <div class="col-sm-2"><label for="ailmentsList" class="control-label">Diagnostico:</label></div>
+                                                    <div class="col-sm-10">
+                                                        <select class="form-control" id="ailmentsList${patientAddress}" style="width:inherit;" required>
+                                                            <option selected disabled>-- Por Favor Seleccione --</option>
+                                                            <option value = "0">Cancer</option>
+                                                            <option value = "1">Ataque Cardiaco</option>
+                                                            <option value = "2">Tumor Cerebral</option>
+                                                            <option value = "3">Anemia</option>
+                                                            <option value = "4">Alzheimer</option>
+                                                            <option value = "5">Gastroenteritis</option>
+                                                            <option value = "6">Tuberculosis</option>
+                                                            <option value = "7">Espondilolistesis</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    <div class="row">
+                                      <div class="col-sm-12">
+                                        <div class="row">
+                                            <div class="form-group col-sm-10">
+                                                <div class="row">
+                                                    <div class="col-sm-2">
+                                                        <label class="control-label" for="details">Detalles:</label>
+                                                    </div>
+                                                    <div class="col-sm-10">
+                                                        <textarea class="form-control" rows="5" id="details" placeholder="Ingrese su diagnostico a detalle" name = "Details" style="width: inherit" required autofocus></textarea>
+                                                        <!-- <input type="text" class="form-control" id="details" placeholder="Enter details to be added" name = "Details" style="width: inherit" required autofocus> -->
+                                                    </div>
+                                                </div>
+                                            </div>
+                                          </div>
+                                    <div class="row">
+                                      <div class="col-sm-12">
+                                        <div class="row">
+                                            <div class="form-group col-sm-10">
+                                                <div class="row">
+                                                  <div class="col-sm-2">
+                                                      <label class="control-label" for="archivo">     Archivo:</label>
+                                                  </div>
+                                                  <div class="col-sm-10">
+                                                      <input type="file" name="photo" id="photo">
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+
+                                            <div class="form-group col-sm-3">
+                                                <button class="btn btn-primary" style="float:right" onclick = "processAndSubmitFile(this,`+index+`)">Enviar</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`
+
+                        var row1 = table.insertRow(index+1);
+                        var cell1 = row1.insertCell(0);
+                        cell1.colSpan = 3;
+
+                        cell1.innerHTML=content;
+
+                    })
+
+
+                }else{
+                    console.log(error);
+                }
+            })
+
+            toggleRecordsButton +=1
+            element.value = "Esconder RME";
+            element.className = "btn btn-danger"
+
+        } else {
+            row = table.rows[index + 1];
+            $(row).hide();
+            toggleRecordsButton -= 1;
+            element.value = "Ver RME";
+            element.className = "btn btn-success"
+        }
+
+    }
+
+
+    async function processAndSubmitFile(element,index) {
+        await processFile();
+        await cargar();
+        await submitDiagnosis(element,index);
+    }
+
+
+
+
+    function readFileAsync(file) {
+      return new Promise((resolve, reject) =>{
+        var reader = new FileReader();
+
+        reader.onloadend =() => {
+          resolve (reader.result);
+          console.log("lectura del archivo 1");
+        };
+
+        reader.onerror = reject;
+
+        reader.readAsArrayBuffer(file);
+        console.log("lectura del archivo 2");
+
+      });
+
+    }
+
+    function cargar(){
+      buf = window.buf
+      const ipfs = window.IpfsApi('localhost', 5001)
+      return new Promise((resolve,reject)=>{
+
+        ipfs.files.add(buf, (err, result) => {
+          window.enlace = `http://127.0.0.1:8080/ipfs/${result[0].hash}`
+          console.log(`Url --> ${enlace}`)
+          resolve(window.enlace)
+          })
+        console.error = reject;
+      })
+
+    }
+
+
+
+
+    async function processFile(){
+      try{
+        const photo = document.getElementById("photo").files[0];
+        const ipfs = window.IpfsApi('localhost', 5001) // Connect to IPFS
+        console.log("Antes de lectura");
+        let contentBuffer = await readFileAsync(photo);
+        console.log("despues lectura");
+        //console.log(contentBuffer);
+        window.buf = buffer.Buffer(contentBuffer) // Convert data into buffer
+        console.log("Buffer");
+        //console.log(buf);
+
+      } catch(err){
+        console.log(err);
+      }
+    }
+
+
+    function submitDiagnosis(element,index)
+    {
+        console.log("Submit diagnostico");
+        urle = window.enlace;
+        console.log("direccion de archivo");
+        console.log(urle);
+        var table = document.getElementById("viewPatient");
+        var patientAddress = table.rows[index].cells[1].innerHTML;
+
+        //console.log(patientAddress);
+        // var dropSelect = document.getElementById("ailmentsList"+patientAddress);
+        var diagnosis = $("#ailmentsList"+patientAddress).val();
+        diagnosis = parseInt(diagnosis);
+        var diagnosed = ailmentsDict[diagnosis];
+        var comments = document.getElementById("details").value;
+
+        var oldRecords = $("#records"+patientAddress).html();
+
+        var today = new Date();
+        var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+        var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+        var dateTime = date+' '+time;
+
+
+        var newRecords =
+`Diagnosticado por : ${docName}
+Llave Publica Doctor: ${key}
+Fecha : ${dateTime}
+Diagnostico : ${diagnosed}
+Comentarios : ${comments}
+Archivo : ${urle}
+
+`
+
+        var updatedRecords = oldRecords+newRecords;
+
+        if (!isNaN(diagnosis)){
+
+            var buffer = Buffer(updatedRecords);
+
+            ipfs.files.add(buffer, (error, result) => {
+                if(error){
+                    console.log(error)
+                }else{
+                    ipfshash = result[0].hash;
+                    contractInstance.insurance_claim(patientAddress, diagnosis, ipfshash, {gas: 1000000}, function(error, result){
+                        if(!error){
+                            alert("Su diagnostico ha sido enviado con exito");
+                            // delete content row
+                            table.deleteRow(index+1);
+
+                            // delete main row of corresponding content row
+                            table.deleteRow(index);
+                        }else{
+                            $(".alert-danger").show();
+                            console.log(error);
+                        }
+                    })
+                }
+            });
+
+        }
+        else{
+            alert("Seleccione un diagnostico");
+        }
+    }
+</script>
+
+</body>
+
+</html>
